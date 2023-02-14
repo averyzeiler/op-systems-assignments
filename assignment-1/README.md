@@ -2,4 +2,4 @@
 ### Workflow Breakdown
 seconds.c: Completed in full by Avery Zeiler. <br />
 shell.c: <br />
-q3.c: Code created by Avery Zeiler, tested and debugged by (?).
+q3.c: Completed in full by Avery Zeiler.
