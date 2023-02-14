@@ -69,6 +69,7 @@ void student (void params) {
         printf("Student %d is now working for %d seconds.\n", num, work);
         sleep(work);
         pthread_mutex_lock(&lock_ta);
+        printf("Student %d is now seeking help.\n", num);
         // Student is now seeking help
         if (students_waiting < 3) {
             // CASE 2A: Student is able to wait in the hallway
