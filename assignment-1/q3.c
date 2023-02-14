@@ -15,26 +15,21 @@
 
 // Used in case if no arguments are given when main() is called
 // 6 students, 3 times they can access the TA
-#define DEFAULT_NUM_STU = 6
-#define DEFAULT_ACCESS_AMNT = 3
-
-// stu_num used mostly for debugging, access_amnt for terminating program
-struct stu {
-    int stu_num;
-    int access_amnt;
-};
+#define DEFAULT_NUM_STU 4  
+#define DEFAULT_ACCESS_AMNT 3
 
 sem_t sem_stu;              // Indicates if students need help
 sem_t sem_ta;               // Indicates if TA is available
 pthread_mutex_t lock_ta;    // Used to lock TA resource
 
-int num_threads;                    // Number of STUDENTS; real # of threads is num_threads + 1
-int chairs[3];                      // Buffer for students to sit in; contains student numbers
-int students_waiting = 0;           // Number of students waiting
-int next_student = 0;               // Position of next student to be helped
-int next_chair = 0;                 // Next available chair; can be 0, 1, or 2
-bool ta_asleep = false;             // TA begins awake!
-int need_help = DEFAULT_NUM_STU;    // Used to terminate program once students are done being helped
+int num_threads = DEFAULT_NUM_STU;      // Number of STUDENTS; real # of threads is num_threads + 1
+int chairs[3];                          // Buffer for students to sit in; contains student numbers
+int students_waiting = 0;               // Number of students waiting
+int next_student = 0;                   // Position of next student to be helped
+int next_chair = 0;                     // Next available chair; can be 0, 1, or 2
+bool ta_asleep = false;                 // TA begins awake!
+int need_help = DEFAULT_NUM_STU;        // Used to terminate program once students are done being helped
+int num_turns = DEFAULT_ACCESS_AMNT;    // Number of times each student can access TA
 
 // UTILITY FUNCTION: determines if a character can be converted to an integer
 bool isInt (char num[]) {
@@ -54,9 +49,9 @@ bool isWaiting(int id) {
     return false;
 }
 
-void student (void params) {
-    int num = ((struct stu*)params)->stu_num + 1;
-    int access = ((struct stu*)params)->access_amnt;
+void * student (void *params) {
+    int num = *(int*)params;        // To identify which student is seeking help
+    int access = num_turns;         // Limits how many times students can access TA
     int work;
     printf("Student number %d thread created.\n", num);
     // This part repeats until students are finished being helped!
@@ -65,7 +60,7 @@ void student (void params) {
         if (isWaiting(num)) 
             continue;
         // Student is NOT waiting in a chair
-        work = rand() % 10; // Generate random work time between 0 and 9
+        work = rand() % 10 + 1; // Generate random work time between 0 and 9
         printf("Student %d is now working for %d seconds.\n", num, work);
         sleep(work);
         pthread_mutex_lock(&lock_ta);
@@ -89,10 +84,11 @@ void student (void params) {
             printf("No chairs available. Student %d will try again later.\n", num);
         } 
     }
-    return;
+    printf("Student %d has finished working and is heading home.\n", num);
+    pthread_exit(0);
 }
 
-void teachingAssistant () {
+void * teachingAssistant () {
     printf("Teaching assistant thread created.\n");
     int help;
     // This part repeats until all students are finished being helped!
@@ -104,9 +100,9 @@ void teachingAssistant () {
             sem_wait(&sem_stu);
             pthread_mutex_lock(&lock_ta);
             // Time to help student!
-            help = rand() % 10; // Generate random help time between 0 and 9
-            printf("Helping %d student for %d seconds.\n", chairs[next_student], help);
-            printf("There are still %d students waiting.\n", (students_waiting - 1));
+            help = rand() % 10 + 1; // Generate random help time between 0 and 9
+            printf("Helping student %d for %d seconds.\n", chairs[next_student], help);
+            printf("Students waiting = %d\n", (students_waiting - 1));
             // Move to next student in line
             chairs[next_student] = 0;
             students_waiting--;
@@ -121,7 +117,7 @@ void teachingAssistant () {
             ta_asleep = true;
         }
     }
-    return;
+    pthread_exit(0);
 }
 
 // Arguments given:
@@ -129,11 +125,9 @@ void teachingAssistant () {
     // Number of times an individual student can access the TA (index 2)
 // Because of this, argc = 3 and argv has a size of 3
 int main (int argc, char *argv[]){
+    
+    // FIRSTLY, set parameters based on command line input
 
-    // Initialize number of students + number of times student can access TA
-    struct stu *tmp = (struct stu *)malloc(sizeof(struct stu));
-    num_threads = DEFAULT_NUM_STU;
-    tmp->access_amnt = DEFAULT_ACCESS_AMNT;
     // CASE 1: No arguments were inputted
     if (argc == 1) {
         printf("No arguments inputted, initializing to default values.\n");
@@ -156,18 +150,19 @@ int main (int argc, char *argv[]){
             printf("Invalid input for number of students. Initializing to default.\n");
         }
         if (isInt(argv[2])) {
-            tmp->access_amnt = atoi(argv[2]);
+            num_turns = atoi(argv[2]);
         } else {
             printf("Invalid input for access. Initializing to default.\n");
         }
     }
 
     // Initialize thread IDs and attributes
+    int student_ids[num_threads];       // To identify each student. Must be a list because threads are asynchronous
     pthread_t tid_s[num_threads];
     pthread_t tid_ta;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
-    need_help = num_threads;
+    need_help = num_threads;            // This terminates the TA thread
     
     // Initialize semaphore for student availability
     if (sem_init(&sem_stu, 0, 0) != 0) {
@@ -189,7 +184,7 @@ int main (int argc, char *argv[]){
         printf("Error in initializing mutex lock.\n");
         return -3;
     }
-
+    
     // Create TA thread
     if (pthread_create(&tid_ta, &attr, teachingAssistant, NULL) != 0) {
         // Error in creating TA thread
@@ -199,20 +194,21 @@ int main (int argc, char *argv[]){
 
     // Create all student threads
     for (int i = 0; i < num_threads; i++) {
-        tmp->stu_num = i;
-        if (pthread_create(&tid_s[i], &attr, student, (void *)tmp) != 0) {
+        student_ids[i] = i + 1;
+        if (pthread_create(&tid_s[i], &attr, student, (void*) &student_ids[i]) != 0) {
             // Error in creating student thread
             printf("Error in creating student thread %d.\n", i);
             return -(i + 4);
         }
     }
-
+    
     // Now, the simulation runs until all students are done working!
     for (int i = 0; i < num_threads; i++) {
         if (pthread_join(tid_s[i], NULL) != 0) {
             printf("Error in joining student thread %d.\n", i);
             return i + 1;
         }
+        printf("Student %d thread has been joined.\n", (i+1));
         need_help--;
     }
     if (pthread_join(tid_ta,NULL) != 0) {
@@ -220,5 +216,6 @@ int main (int argc, char *argv[]){
         return num_threads + 1;
     }
     // At this point, simulation has terminated successfully.
+    printf("TA is finished working and is heading home.\n");
     return 0;
 }
