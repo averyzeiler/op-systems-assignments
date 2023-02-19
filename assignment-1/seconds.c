@@ -18,10 +18,11 @@
 #define MESSAGE "Time elapsed since kernel module was loaded: %lu\n"
 // Note that the elapsed time will be stored as an UNSIGNED LONG.
 
-unsigned long START_JIFFIES;
+unsigned long START_JIFFIES;        // Records jiffies once module is loaded; needed to find elapsed jiffies
 
 ssize_t proc_read(struct file *file, char *buf, size_t count, loff_t *pos);
 
+// NOTE: this question follows structure of proc example in assignment 1 folder on Avenue!
 static struct file_operations proc_ops = {
         .owner = THIS_MODULE,
         .read = proc_read,
@@ -35,7 +36,6 @@ int proc_init(void)
     proc_create(PROC_NAME, 0, NULL, &proc_ops);
     // Should print when "dmesg" command is entered in terminal
     printk(KERN_INFO "/proc/%s created\n", PROC_NAME);
-
 	return 0;
 }
 
@@ -75,7 +75,7 @@ ssize_t proc_read(struct file *file, char __user *usr_buf, size_t count, loff_t 
     return err;
 }
 
-// Register module entry and exit points
+// Defines module entry and exit points
 module_init( proc_init );
 module_exit( proc_exit );
 
