@@ -39,16 +39,22 @@ int commandCount = 0; //keeps track of the number of commands entered
 void readInput(char input[], char *args[], int *ampersand){
     int parsing = read(STDIN_FILENO, input, MAX_LINE); //reading user input 
     for (int i = 0; i < parsing; i++){
-        if (input[i] == '&')
+        if (input[i] == '&') //if the input is &, change value
             *ampersand = 1;
     }
 
-    if (strcmp(args[0], "history") == 0){
-        if (commandCount > 0)
+    if (strcmp(args[0], "history") == 0){ //if the user intputs the history command
+        if (commandCount > 0) //if there is history, call function
             history();
         else
-        printf("\n No commands in history.");
+        printf("\n No commands in history."); //if there is no history, display message
 
+    }
+    else if (**args == "!"){ //if the first character in the first string is an !
+        int secondInput = args[0][1]; //check the second input
+        if (secondInput == "!") //if second input is !
+            strcpy(input, historyArr[0]); //return most recent command
+    
     }
 }
 /////////////////////////// printing history 
