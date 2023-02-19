@@ -14,7 +14,7 @@ int main(void)
     char input[MAX_LINE]; //array to hold inputs
     int should_run = 1; //flag to determine when to exit program
     pid_t pid;
-    int ampersand;  //& symbol determines wait/concurrent executions
+    int ampersand = 0;  //& symbol determines wait/concurrent executions
 
     while (should_run){
         printf("osh>");
@@ -35,6 +35,14 @@ int main(void)
 }
 
 
+void readInput(char input[], char *args[], int *ampersand){
+    int parsing = read(STDIN_FILENO, input, MAX_LINE); //reading user input 
+    for (int i = 0; i < parsing; i++){
+        if (input[i] == '&')
+            *ampersand = 1;
+    }
+
+}
 
 
 
