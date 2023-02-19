@@ -14,7 +14,7 @@
 #include <stdbool.h>
 
 // Used in case if no arguments are given when main() is called
-// 6 students, 3 times they can access the TA
+// 4 students, 3 times they can access the TA
 #define DEFAULT_NUM_STU 4  
 #define DEFAULT_ACCESS_AMNT 3
 
