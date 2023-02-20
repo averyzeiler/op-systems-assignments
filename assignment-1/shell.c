@@ -7,7 +7,12 @@
 
 /*
     REFERENCES:
-    ya ya lets get this bread #slay yass boots
+    Practice Lab 3 Part 1 (forking processes)
+    Test code for this question (uploaded on Teams in the Assignments channel)
+    Linux manual for execvp functionality: https://linux.die.net/man/3/explain_execvp
+    String.h string library: https://www.tutorialspoint.com/c_standard_library/string_h.htm
+    Fgets in standard library: https://www.tutorialspoint.com/c_standard_library/c_function_fgets.htm
+    
 */
 
 #include <stdio.h>
@@ -17,16 +22,17 @@
 
 #define MAX_LINE 80 //max length of command
 
-//PART 2: Printing History
-char *historyArr[5][MAX_LINE]; //array of length 5 to store most recent commands
+char historyArr[5][MAX_LINE]; //array of length 5 to store most recent commands
 int commandCount = 0; //keeps track of the number of commands entered
 int historyCount = 0;
 
-void history(){
-    int i;
-    int start = historyCount - 1; //index of most recent command
-    for (i = start; i >= 0; i--){ //starting at most recent command
-        printf("%d %s\n", historyCount - i, historyArr[i%5]); //printing each command with its index
+void history() {
+    if (historyCount == 0) {
+        printf("No commands in history.\n");
+        return;
+    }
+    for (int i = 0; i < historyCount; i++) { //starting at most recent command
+        printf("%d %s\n", commandCount - i, historyArr[i]); //printing each command with its index
     }
 }
 
@@ -37,33 +43,38 @@ int main(void)
     char input[MAX_LINE]; //array to hold inputs
     int should_run = 1; //flag to determine when to exit program
     pid_t pid;
+    int ampersand = 0;
 
-    while (should_run) {
+    while (should_run == 1) {
         printf("osh>");
         fflush(stdout);
         fgets(input, MAX_LINE, stdin); //read user input
         input[strcspn(input, "\n")] = '\0'; //remove new line
-
+        
         if (strcmp(input, "history") == 0){ //if the user types "history", call history
             history();
+            if (historyCount < 5) //if history buffer isnt full, increment
+                historyCount++;
+            for (int i = historyCount - 1; i > 0; i--) //iterate through buffer in reverse order (starting with most recent)
+                strcpy(historyArr[i], historyArr[i-1]);
+            strcpy(historyArr[0], "history");
+            commandCount++;
             continue;
         }
-
+        
         if (strcmp(input, "!!") == 0){ //if the user inputs "!!"
             if (historyCount > 0) //if there is a history, take most recent
                 strcpy(input, historyArr[0]);
             else{
-                printf("No commands in history\n"); //if there isnt a history, print message
+                printf("No commands in history.\n"); //if there isnt a history, print message
                 continue;
             }
         }
-        if (strcmp(args[0], "exit") == 0) //if the user types exit, program ends
-            exit(0);
         
         if (historyCount < 5) //if history buffer isnt full, increment
             historyCount++;
         
-        for (int i = historyCount - 1; i > 0; i--) //iterate through buffer in recerse order (starting with most recent)
+        for (int i = historyCount - 1; i > 0; i--) //iterate through buffer in reverse order (starting with most recent)
             strcpy(historyArr[i], historyArr[i-1]);
 
         strcpy(historyArr[0], input);
@@ -72,53 +83,40 @@ int main(void)
 
         //parse input and divide into arguments (command + argument)
         //separate based on the space 
-
         char *token = strtok(input, " "); // point to beginning of argument string, store as variable token
         while (token != NULL){
             args[num] = token;
+            printf("%s\n", token);
             token = strtok(NULL, " "); //continues break string into tokens
             num++;
         }
         args[num] = NULL; //the last argument is set as NULL
-
-            pid = fork();
-            if (pid < 0) //if the fork is unsuccessful, exit
-                exit(1);
-            else if (pid == 0){ //if the fork is successful
-                execvp(args[0], args); //call execvp function
-                exit(0);
-            }
-        
-            else{
-            //if the last character is an ampersand, the parent waits for child to execute
-            if (input[strlen(input)-1] != '&')  //check the last character
-            wait(NULL);
-            }
-            commandCount++; 
+        if (strcmp(args[num - 1],"&")==0) {     //run concurrently
+            args[num - 1] = NULL;
+            ampersand = 1;
         }
+
+        if (strcmp(args[0], "exit") == 0) { //if the user types exit, program ends
+            should_run = 0;
+            continue;
+        }
+        pid = fork();
+        if (pid < 0) //if the fork is unsuccessful, exit
+            exit(1);
+        else if (pid == 0){ //if the fork is successful
+            printf("Fork was successful. Pid = %d. Executing...\n", pid);
+            if (execvp(args[0], args) == -1) { //call execvp function
+                perror("execvp error");
+                exit(1);
+            }
+        } else {
+            //if the last character is an ampersand, the parent continues while child executes in background
+            if (ampersand == 0)  //check the last character
+                wait(NULL);
+        }
+        commandCount++;
+        ampersand = 0;
+    }
 
     return 0;
-
-    }   
-
-
-
-/*
-void history(){
-    int historyCount = commandCount; //number of history is equal to number of commands
-    int j = 0;
-    for (int i = 0; i<5; i++){
-        printf("%d. ", historyCount); //print the command number
-        while (historyArr[i][j] != '\0' && historyArr[i][j] != '\n'){ //while the nect character is not a new line or null
-            j++;
-            printf("%c", historyArr[i][j]); //print the command
-        }
-
-        printf("\n"); //new line
-        historyCount --; //history listed from last to first
-        j = 0;
-        if (historyCount == 0) //if at the last entry, break
-            break;       
-    }
-}
-*/
+}   
