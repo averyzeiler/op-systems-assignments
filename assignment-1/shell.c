@@ -1,6 +1,6 @@
 /*
     Assignment 1
-    Question 
+    Question 2
     Avery Zeiler (zeilera, 400305001) and Clara Dawang (dawangc, 400329049)
     Due: February 19th, 2023
 */
@@ -16,9 +16,19 @@
 #include <stdlib.h>
 
 #define MAX_LINE 80 //max length of command
-char historyArr[5][MAX_LINE]; //array of length 5 to store most recent commands
+
+//PART 2: Printing History
+char *historyArr[5][MAX_LINE]; //array of length 5 to store most recent commands
 int commandCount = 0; //keeps track of the number of commands entered
-void history();
+int historyCount = 0;
+
+void history(){
+    int i;
+    int start = historyCount - 1;
+    for (i = start; i >= 0; i--){
+        printf("%d %s\n", historyCount - i, historyArr[i%5]);
+    }
+}
 
 /////////////////////////// parts 1 and 2
 int main(void)
@@ -34,6 +44,30 @@ int main(void)
         fgets(input, MAX_LINE, stdin); //read user input
         input[strcspn(input, "\n")] = '\0'; //remove new line
 
+        if (strcmp(input, "history") == 0){ //if the user types "history", call history
+            history();
+            continue;
+        }
+
+        if (strcmp(input, "!!") == 0){ //if the user inputs "!!"
+            if (historyCount > 0) //if there is a history, take most recent
+                strcpy(input, historyArr[0]);
+            else{
+                printf("No commands in history\n"); //if there isnt a history, print message
+                continue;
+            }
+        }
+        if (strcmp(args[0], "exit") == 0) //if the user types exit, program ends
+            exit(0);
+        
+        if (historyCount < 5)
+            historyCount++;
+        
+        for (int i = historyCount - 1; i > 0; i--)
+            strcpy(historyArr[i], historyArr[i-1]);
+
+        strcpy(historyArr[0], input);
+        
         int num = 0;
 
         //parse input and divide into arguments (command + argument)
@@ -47,10 +81,6 @@ int main(void)
         }
         args[num] = NULL; //the last argument is set as NULL
 
-        if (strcmp(args[0], "exit") == 0)
-            should_run = 0;
-        
-        else{
             pid = fork();
             if (pid < 0) //if the fork is unsuccessful, exit
                 exit(1);
@@ -63,13 +93,17 @@ int main(void)
             //if the last character is an ampersand, the parent waits for child to execute
             if (input[strlen(input)-1] != '&')  //check the last character
             wait(NULL);
+            }
+            commandCount++; 
         }
-    }
 
     return 0;
-}
 
-//PART 2: Printing History
+    }   
+
+
+
+/*
 void history(){
     int historyCount = commandCount; //number of history is equal to number of commands
     int j = 0;
@@ -87,11 +121,4 @@ void history(){
             break;       
     }
 }
-
-
-
-
-
-
-
-
+*/
