@@ -27,16 +27,18 @@ int main(void)
     char input[MAX_LINE]; // array to hold inputs
     int should_run = 1; // flag to determine when to exit program
     pid_t pid;
-    int num = 0;
 
     while (should_run) {
         printf("osh>");
-        fgets(input, MAX_LINE, stdin); //read user input
-        input[strcspn(input, "\n")] = '\0'; // remove \n (newline character) and replace with null terminator
         fflush(stdout);
+        fgets(input, MAX_LINE, stdin); //read user input
+        input[strcspn(input, "\n")] = '\0'; //remove new line
+        int num = 0;
+
 
         //parse input and divide into arguments (command + argument)
         //separate based on the space 
+
         char *token = strtok(input, " "); // point to beginning of argument string, store as variable token
         while (token != NULL){
             args[num] = token;
@@ -45,17 +47,22 @@ int main(void)
         }
         args[num] = NULL; //the last argument is set as NULL
 
-        pid = fork();
-        if (pid < 0) //if the fork is unsuccessful, exit
-            exit(1);
-        else if (pid == 0){ //if the fork is successful
-            execvp(args[0], args); //call execvp function
-            exit(0);
-        }
+        if (strcmp(args[0], "exit") == 0)
+            should_run = 0;
+        
         else{
+            pid = fork();
+            if (pid < 0) //if the fork is unsuccessful, exit
+                exit(1);
+            else if (pid == 0){ //if the fork is successful
+                execvp(args[0], args); //call execvp function
+                exit(0);
+            }
+        
+            else{
             //if the last character is an ampersand, the parent waits for child to execute
-            if (input[strlen(input)-1] != '&')  //check the last character
-            wait(NULL);
+                if (input[strlen(input)-1] != '&')  //check the last character
+                wait(NULL);
         }
         //DRAFT CODE//
         // num = readInput(input, &args, &ampersand); //reads input
@@ -80,9 +87,12 @@ int main(void)
     }
 
     return 0;
+    }
 }
 
-int readInput(char input[], char *args[], int *ampersand){
+/* I ADDED THIS CODE TO THE FIRST FUNCTION, BUT WE CAN KEEP IT SEPARATE IF YOU WANT :)
+    
+    int readInput(char input[], char *args[], int *ampersand){
     int i = 0;
     args[i] = strtok(input," ");
     // Divides up string at each space (ie separates into "words" or arguments)
@@ -96,7 +106,10 @@ int readInput(char input[], char *args[], int *ampersand){
         *ampersand = 1;
     }
     return i;
+    */ 
+   
     /*
+    THIS PART IS WRONG AND GROSS
     int parsing = read(STDIN_FILENO, input, MAX_LINE); //reading user input 
     for (int i = 0; i < parsing; i++) {
         if (input[i] == '&') //if the input is &, change value
@@ -116,7 +129,7 @@ int readInput(char input[], char *args[], int *ampersand){
             strcpy(input, historyArr[0]); //return most recent command
     
     }*/
-}
+
 /////////////////////////// printing history 
 
 void history(){
