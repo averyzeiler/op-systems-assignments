@@ -12,7 +12,12 @@
     Linux manual for execvp functionality: https://linux.die.net/man/3/explain_execvp
     String.h string library: https://www.tutorialspoint.com/c_standard_library/string_h.htm
     Fgets in standard library: https://www.tutorialspoint.com/c_standard_library/c_function_fgets.htm
-    
+    Operating Systems Concepts by Abraham Silberschatz, Peter Baaer Galvin, Greg Gagne
+    https://drive.uqu.edu.sa/_/mskhayat/files/MySubjects/2017SS%20Operating%20Systems/Abraham%20Silberschatz-Operating%20System%20Concepts%20(9th,2012_12).pdf
+    C library Functions
+    https://www.tutorialspoint.com/c_standard_library/c_function_strtok.htm
+    Simon Fraser University - Project 2
+    https://coursys.sfu.ca/2017fa-cmpt-300-d1/pages/Prj2/view
 */
 
 #include <stdio.h>
