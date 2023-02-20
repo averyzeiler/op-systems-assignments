@@ -198,21 +198,21 @@ int main (int argc, char *argv[]){
     if (sem_init(&sem_done, 0, 0) != 0) {
         // Error in initializing semaphore
         printf("Error in initializing TA semaphore.\n");
-        return -2;
+        return -3;
     }
 
     // Initialize mutex to lock TA resource
     if (pthread_mutex_init(&lock_ta, NULL) != 0) {
         // Error in initializing mutex lock
         printf("Error in initializing TA mutex lock.\n");
-        return -3;
+        return -4;
     }
     
     // Create TA thread
     if (pthread_create(&tid_ta, &attr, teachingAssistant, NULL) != 0) {
         // Error in creating TA thread
         printf("Error in creating TA thread.\n");
-        return -(num_threads + 2);
+        return -5;
     }
 
     // Create all student threads
@@ -221,7 +221,7 @@ int main (int argc, char *argv[]){
         if (pthread_create(&students[i].tid, &attr, student, (void*) &students[i].id) != 0) {
             // Error in creating student thread
             printf("Error in creating student thread %d.\n", students[i].id);
-            return -(i + 4);
+            return -(i + 6);
         }
     }
     
