@@ -16,21 +16,28 @@
 #include <stdlib.h>
 
 #define MAX_LINE 80 //max length of command
+char historyArr[5][MAX_LINE]; //array of length 5 to store most recent commands
+int commandCount = 0; //keeps track of the number of commands entered
+int readInput(char input[], char *args[], int *ampersand);
 
 /////////////////////////// parts 1 and 2
 int main(void)
 { 
     char *args[MAX_LINE/2 + 1];
-    char input[MAX_LINE]; //array to hold inputs
-    int should_run = 1; //flag to determine when to exit program
+    char input[MAX_LINE]; // array to hold inputs
+    int should_run = 1; // flag to determine when to exit program
     pid_t pid;
+    int num = 0;
     int ampersand = 0;  //& symbol determines wait/concurrent executions
 
-    while (should_run){
+    while (should_run) {
         printf("osh>");
-        fflush(stdout);
-        readInput(input, args, &ampersand); //reads input
-        pid = fork();
+        fgets(input, MAX_LINE, stdin);
+        // Remove \n (newline character) and replace with null terminator
+        input[strcspn(input, "\n")] = '\0';
+        //fflush(stdout);
+        num = readInput(input, &args, &ampersand); //reads input
+        /*pid = fork();
 
         if (pid < 0) //if the fork is unsuccessful, exit
             exit(1);
@@ -38,17 +45,36 @@ int main(void)
         else if (pid == 0){ //if the fork is successful 
             if (ampersand == 0) //if there is no &
                 wait(NULL); // parent waits while child executes
+        }*/
+        if (strcmp(args[0], "exit") == 0) {
+            break;
+        }
+        if (num == 0) {
+            // Blank line
+            continue;
         }
     }
 
     return 0;
 }
 
-int commandCount = 0; //keeps track of the number of commands entered
-
-void readInput(char input[], char *args[], int *ampersand){
+int readInput(char input[], char *args[], int *ampersand){
+    int i = 0;
+    args[i] = strtok(input," ");
+    // Divides up string at each space (ie separates into "words" or arguments)
+    while (args[i] != NULL) {
+        printf("%s\n", args[i]);
+        i++;
+        args[i] = strtok(NULL, " ");  
+    }
+    args[i] = NULL;
+    if (strcmp(args[i - 1], "&") == 0) {
+        *ampersand = 1;
+    }
+    return i;
+    /*
     int parsing = read(STDIN_FILENO, input, MAX_LINE); //reading user input 
-    for (int i = 0; i < parsing; i++){
+    for (int i = 0; i < parsing; i++) {
         if (input[i] == '&') //if the input is &, change value
             *ampersand = 1;
     }
@@ -65,11 +91,9 @@ void readInput(char input[], char *args[], int *ampersand){
         if (secondInput == "!") //if second input is !
             strcpy(input, historyArr[0]); //return most recent command
     
-    }
+    }*/
 }
 /////////////////////////// printing history 
-
-char historyArr[5][MAX_LINE]; //array of length 5 to store most recent commands
 
 void history(){
     int historyCount = commandCount; //number of history is equal to number of commands
