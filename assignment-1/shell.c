@@ -33,12 +33,13 @@ int main(void)
         fflush(stdout);
         fgets(input, MAX_LINE, stdin); //read user input
         input[strcspn(input, "\n")] = '\0'; //remove new line
-        int num = 0;
 
+        int num = 0;
 
         //parse input and divide into arguments (command + argument)
         //separate based on the space 
-        char *token = strtok(input, " "); //point to beginning of argument string, store as variable token
+
+        char *token = strtok(input, " "); // point to beginning of argument string, store as variable token
         while (token != NULL){
             args[num] = token;
             token = strtok(NULL, " "); //continues break string into tokens
@@ -61,57 +62,14 @@ int main(void)
             else{
             //if the last character is an ampersand, the parent waits for child to execute
             if (input[strlen(input)-1] != '&')  //check the last character
-                wait(NULL);
+            wait(NULL);
         }
-        num = 0;
     }
 
     return 0;
-    }
 }
 
-/* I ADDED THIS CODE TO THE FIRST FUNCTION, BUT WE CAN KEEP IT SEPARATE IF YOU WANT :)
-    
-    int readInput(char input[], char *args[], int *ampersand){
-    int i = 0;
-    args[i] = strtok(input," ");
-    // Divides up string at each space (ie separates into "words" or arguments)
-    while (args[i] != NULL) {
-        printf("%s\n", args[i]);
-        i++;
-        args[i] = strtok(NULL, " ");  
-    }
-    args[i] = NULL;
-    if (strcmp(args[i - 1], "&") == 0) {
-        *ampersand = 1;
-    }
-    return i;
-    */ 
-   
-    /*
-    THIS PART IS WRONG AND GROSS
-    int parsing = read(STDIN_FILENO, input, MAX_LINE); //reading user input 
-    for (int i = 0; i < parsing; i++) {
-        if (input[i] == '&') //if the input is &, change value
-            *ampersand = 1;
-    }
-
-    if (strcmp(args[0], "history") == 0){ //if the user intputs the history command
-        if (commandCount > 0) //if there is history, call function
-            history();
-        else
-        printf("\n No commands in history."); //if there is no history, display message
-
-    }
-    else if (**args == "!"){ //if the first character in the first string is an !
-        int secondInput = args[0][1]; //check the second input
-        if (secondInput == "!") //if second input is !
-            strcpy(input, historyArr[0]); //return most recent command
-    
-    }*/
-
-/////////////////////////// printing history 
-
+//PART 2: Printing History
 void history(){
     int historyCount = commandCount; //number of history is equal to number of commands
     int j = 0;
