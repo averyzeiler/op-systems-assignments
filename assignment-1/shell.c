@@ -1,4 +1,14 @@
-//question 2
+/*
+    Assignment 1
+    Question 
+    Avery Zeiler (zeilera, 400305001) and Clara Dawang (dawangc, 400329049)
+    Due: February 19th, 2023
+*/
+
+/*
+    REFERENCES:
+    ya ya lets get this bread #slay yass boots
+*/
 
 #include <stdio.h>
 #include <unistd.h>

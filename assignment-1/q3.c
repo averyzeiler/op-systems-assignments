@@ -1,8 +1,17 @@
 /*
- Assignment 1
- Question 3
- Avery Zeiler (zeilera, 400305001) and Clara Dawang (dawangc, 400329049)
- Due: February 19th, 2023
+    Assignment 1
+    Question 3
+    Avery Zeiler (zeilera, 400305001) and Clara Dawang (dawangc, 400329049)
+    Due: February 19th, 2023
+*/
+
+/*
+    REFERENCES:
+    Practice Lab 3 (Part 2)
+    Practice Lab 4 (all parts)
+    Mutex lock examples: https://docs.oracle.com/cd/E19455-01/806-5257/sync-12/index.html
+    Semaphore.h library syntax: https://pubs.opengroup.org/onlinepubs/009695399/basedefs/semaphore.h.html
+    Mutex lock library syntax: https://pubs.opengroup.org/onlinepubs/009604499/functions/pthread_mutex_lock.html
 */
 
 // Include necessary libraries

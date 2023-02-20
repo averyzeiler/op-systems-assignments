@@ -1,8 +1,16 @@
 /*
- Assignment 1
- Question 1
- Avery Zeiler (zeilera, 400305001) and Clara Dawang (dawangc, 400329049)
- Due: February 15th, 2023
+    Assignment 1
+    Question 1
+    Avery Zeiler (zeilera, 400305001) and Clara Dawang (dawangc, 400329049)
+    Due: February 1th, 2023
+*/
+
+/*
+    REFERENCES:
+    Proc file system document on Avenue
+    hello.c (Assignments folder on Avenue)
+    Practice Lab 2 (kernel module creation; part 2)
+    Formula to calculate elapsed time: http://www.makelinux.net/ldd3/chp-7-sect-1.shtml
 */
 
 #include <linux/init.h>
