@@ -28,15 +28,37 @@ int main(void)
     int should_run = 1; // flag to determine when to exit program
     pid_t pid;
     int num = 0;
-    int ampersand = 0;  //& symbol determines wait/concurrent executions
 
     while (should_run) {
         printf("osh>");
-        fgets(input, MAX_LINE, stdin);
-        // Remove \n (newline character) and replace with null terminator
-        input[strcspn(input, "\n")] = '\0';
-        //fflush(stdout);
-        num = readInput(input, &args, &ampersand); //reads input
+        fgets(input, MAX_LINE, stdin); //read user input
+        input[strcspn(input, "\n")] = '\0'; // remove \n (newline character) and replace with null terminator
+        fflush(stdout);
+
+        //parse input and divide into arguments (command + argument)
+        //separate based on the space 
+        char *token = strtok(input, " "); // point to beginning of argument string, store as variable token
+        while (token != NULL){
+            args[num] = token;
+            token = strtok(NULL, " "); //continues break string into tokens
+            num++;
+        }
+        args[num] = NULL; //the last argument is set as NULL
+
+        pid = fork();
+        if (pid < 0) //if the fork is unsuccessful, exit
+            exit(1);
+        else if (pid == 0){ //if the fork is successful
+            execvp(args[0], args); //call execvp function
+            exit(0);
+        }
+        else{
+            //if the last character is an ampersand, the parent waits for child to execute
+            if (input[strlen(input)-1] != '&')  //check the last character
+            wait(NULL);
+        }
+        //DRAFT CODE//
+        // num = readInput(input, &args, &ampersand); //reads input
         /*pid = fork();
 
         if (pid < 0) //if the fork is unsuccessful, exit
@@ -45,14 +67,16 @@ int main(void)
         else if (pid == 0){ //if the fork is successful 
             if (ampersand == 0) //if there is no &
                 wait(NULL); // parent waits while child executes
-        }*/
-        if (strcmp(args[0], "exit") == 0) {
+
+          if (strcmp(args[0], "exit") == 0) {
             break;
         }
         if (num == 0) {
             // Blank line
             continue;
         }
+        }*/
+      
     }
 
     return 0;
