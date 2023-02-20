@@ -24,9 +24,9 @@ int historyCount = 0;
 
 void history(){
     int i;
-    int start = historyCount - 1;
-    for (i = start; i >= 0; i--){
-        printf("%d %s\n", historyCount - i, historyArr[i%5]);
+    int start = historyCount - 1; //index of most recent command
+    for (i = start; i >= 0; i--){ //starting at most recent command
+        printf("%d %s\n", historyCount - i, historyArr[i%5]); //printing each command with its index
     }
 }
 
@@ -60,10 +60,10 @@ int main(void)
         if (strcmp(args[0], "exit") == 0) //if the user types exit, program ends
             exit(0);
         
-        if (historyCount < 5)
+        if (historyCount < 5) //if history buffer isnt full, increment
             historyCount++;
         
-        for (int i = historyCount - 1; i > 0; i--)
+        for (int i = historyCount - 1; i > 0; i--) //iterate through buffer in recerse order (starting with most recent)
             strcpy(historyArr[i], historyArr[i-1]);
 
         strcpy(historyArr[0], input);
