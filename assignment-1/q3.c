@@ -24,7 +24,7 @@
 
 // Used in case if no arguments are given when main() is called
 // 5 students, 3 times they can access the TA
-#define DEFAULT_NUM_STU 6
+#define DEFAULT_NUM_STU 5
 #define DEFAULT_ACCESS_AMNT 1
 
 // GLOBAL VARIABLE DECLARATIONS
