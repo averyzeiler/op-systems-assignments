@@ -5,54 +5,6 @@
 */
 
 /*
-    We are writing a SIMPLE MEMORY MANAGEMENT SIMULATOR IN C that supports PAGING
-    Logical address space (2^16 bytes) larger than physical address space (2^15 bytes)
-    - Assume byte addressable!
-    - 16 bits to represent logical address, 15 bits to represent physical address
-    Page size = 256 bytes (2^8; thus there are 2^8 = 256 pages in memory!)
-    Max # of entries in translation lookaside buffer = 16
-*/
-
-/*
-    Simulate a MEMORY MANAGEMENT UNIT (MMU); translates logical -> physical addresses
-    - How to translate logical -> physical addresses:
-        - Check TLB for the page
-        - Page not found in TLB: check page table if page exists in memory
-        - Page not found in page table -> FAULT OCCURS
-    - Handling page faults:
-        - Copy page from backing store -> memory
-        - Since logical address space > physical, page request might involve replacing a page in memory with the new page
-        - Page replacement policy == FIFO page replacement policy
-*/
-
-// Divided into 3 parts: address translation, translation lookaside buffer, and page fault handling
-
-/*
-    ADDRESS TRANSLATION [15]
-    - addresses.txt (in requirements) contains integers representing logical addresses ranging over whole logical address space
-    - Program will open addresses.txt using fopen(); read logical addresses + compute page number and offset of address using bitwise operators
-    - Will use page number from ^ to look up in TLB
-        - TLB-hit (entry @ page number EXISTS): frame number is obtained from TLB
-        - TLB-miss (NO entry @ corresponding page number): look up page table
-        - In either case, frame number obtained from page table OR page fault occurs
-    - Page table can simply be an array! Entries initialized to -1 to indicate a page is not in memory (DEMAND PAGING)
-    *** LECTURE NOTES ON MAIN MEMORY AND PL5!
-*/
-
-/*
-    TRANSLATION LOOKASIDE BUFFER [10]
-    - Create data structure TLBentry; stores page # + frame # pair to simulate entries of TLB
-    - Need 3 functions related to TLB:
-        - search_TLB: search TLB for entry corresponding to page #
-        - TLB_add: add an entry to TLB using FIFO policy (TLB full -> new entry replaces oldest entry)
-        - TLB_Update: update page when page P is replaced in physical memory & entry corresponding to P already exists in TLB
-            - Simple version (this assignment): add new page entry at same location as P (...replace?)
-    *** IMPLEMENT TLB AS A CIRCULAR ARRAY!
-    *** Bypass TLB + use only a page table initially, then integrate TLB once program works properly
-        - TLB only makes adress translation faster, but MM works WITHOUT a TLB
-*/
-
-/*
     HANDLING PAGE FAULTS [15]
     - Copy page from backing store -> frame in memory
     - BACKING_STORE.bin represents backing store; size of 2^16 bytes
@@ -99,6 +51,9 @@
 #define MAX_TLB 16
 
 int pageTable[PAGES];   // Will store the frames to map to memory
+int pageFaults = 0;
+int TLBhits = 0;
+int TLBmisses = 0;
 
 
 // https://www.programiz.com/dsa/circular-linked-list
@@ -110,7 +65,9 @@ struct TLBentry {
 struct Node {
     struct TLBentry data;
     struct Node* next;
-}
+};
+
+int findFrame(uint8_t page);
 
 // NOTE: last == end of CLL!
 // UTILITY FUNCTION: create a new CLL
@@ -158,21 +115,22 @@ int search_TLB (struct Node* last, uint8_t page) {
     struct Node* p;
     if (last == NULL) {
         printf("The list is empty.\n");
+        TLBmisses++;
         return 0;
     }
     p = last->next;
-    int count = 0;
     do {
         // if page found, exit loop and return frame number
         if (p->data.pageNumber == page) {
             printf("TLB hit!\n");
+            TLBhits++;
             return (int)p->data.frameNumber;
         }
         p = p->next;
-        count--;
     } while (p != last->next);
     printf("TLB miss!\n");
-    return count;   // indicates a TLB miss
+    TLBmisses++;
+    return findFrame(page);   // indicates a TLB miss
 }
 
 struct Node* find_TLB (struct Node* last, uint8_t page) {
@@ -199,10 +157,10 @@ struct Node* TLB_Add (struct Node* last, struct TLBentry data) {
     int size = sizeOfTLB(last);
     if (size == 0) {
         struct Node* newNode = addToEmpty(last, data);
-        return newNode;
+        return newNode;     // returns last
     } else if (size < 16) {
         struct Node* newNode = addFront(last, data);
-        return newNode;
+        return newNode;     // returns last
     } else {
         // if TLB already has 16 entries, must replace first entry
         last->data.frameNumber = data.frameNumber;
@@ -244,6 +202,7 @@ int findFrame(uint8_t page) {
     } else {
         // page fault occurs!!
         // call function to handle page faults
+        return -1;
     }
 }
 
@@ -252,7 +211,6 @@ int main () {
         pageTable[i] = -1;
     }
     FILE * fp = fopen("requirements/addresses.txt", "r");
-
     char buf[BUF_SIZE];
     uint8_t page = 0x00;
     uint8_t off = 0x00;
@@ -261,7 +219,8 @@ int main () {
         page = pageNum(buf);
         off = offset(buf);
         printf("For address %s pageNum = %u, offset = %u\n", buf, page, off);
-
+        int tmp = findFrame(page);
+        printf("Frame number for page %u is %d\n", page, tmp);
     }
     fclose(fp);
     return 0;
