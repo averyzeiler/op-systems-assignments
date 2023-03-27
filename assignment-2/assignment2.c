@@ -69,6 +69,11 @@ struct Node {
 
 int findFrame(uint8_t page);
 
+int handlePageFault() {
+    print("Page fault occurred; put page fault handling code here.\n");
+    return -1;
+}
+
 // NOTE: last == end of CLL!
 // UTILITY FUNCTION: create a new CLL
 struct Node* addToEmpty (struct Node* last, struct TLBentry data) {
@@ -202,7 +207,7 @@ int findFrame(uint8_t page) {
     } else {
         // page fault occurs!!
         // call function to handle page faults
-        return -1;
+        return handlePageFault();
     }
 }
 
@@ -223,5 +228,8 @@ int main () {
         printf("Frame number for page %u is %d\n", page, tmp);
     }
     fclose(fp);
+    printf("Number of TLB hits: %d\n", TLBhits);
+    printf("Number of TLB misses: %d\n", TLBmisses);
+    printf("Number of page faults: %d\n", pageFaults);
     return 0;
 }
