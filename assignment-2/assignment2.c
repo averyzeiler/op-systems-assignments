@@ -70,7 +70,8 @@ struct Node {
 int findFrame(uint8_t page);
 
 int handlePageFault() {
-    print("Page fault occurred; put page fault handling code here.\n");
+    pageFaults++;
+    printf("Page fault occurred; put page fault handling code here.\n");
     return -1;
 }
 
