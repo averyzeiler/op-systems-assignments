@@ -7,7 +7,7 @@
 /*
     HANDLING PAGE FAULTS [15]
     - Copy page from backing store -> frame in memory
-    - BACKING_STORE.bin represents backing store; size of 2^16 bytes
+    - BACKING_STORE.bin represents backing store; size of 2^16 bytes (same ass logical address space)
     - Open backing store using open() + map it to a memory region using mmap()
     - PAGE FAULT: read in 256-byte page from this memory-mapped file + copy it to available frame in physical memory using memcpy()
     - FIFO replacement means that 2 ENTRIES of page table must be updated
