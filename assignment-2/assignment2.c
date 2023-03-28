@@ -50,11 +50,14 @@
 #define OFFSET_BITS 8
 #define MAX_TLB 16
 
-int pageTable[PAGES];   // Will store the frames to map to memory
+// pages in pageTable can be from 0 to 127, as physical address space is half the size of logical address space!
+// this is why they are of type char, because -1 will indicate NOTHING IN PAGE TABLE!
+char pageTable[PAGES];   // Will store the frames to map to memory
 int pageFaults = 0;
 int TLBhits = 0;
 int TLBmisses = 0;
 
+// NOTE: binary file stores SIGNED BYTES; thus they are of type char
 
 // https://www.programiz.com/dsa/circular-linked-list
 struct TLBentry {
@@ -67,7 +70,7 @@ struct Node {
     struct Node* next;
 };
 
-int findFrame(uint8_t page);
+char findFrame(uint8_t page);
 
 int handlePageFault() {
     pageFaults++;
@@ -201,7 +204,7 @@ uint8_t offset (char* buf) {
     return result;
 }
 
-int findFrame(uint8_t page) {
+char findFrame(uint8_t page) {
     if (pageTable[page] != -1) {
         printf("Found in page table that frame num = %d.\n", pageTable[page]);
         return pageTable[page];
@@ -214,7 +217,7 @@ int findFrame(uint8_t page) {
 
 int main () {
     for (int i = 0; i < PAGES; i++) {
-        pageTable[i] = -1;
+        pageTable[i] = (char)-1;
     }
     FILE * fp = fopen("requirements/addresses.txt", "r");
     char buf[BUF_SIZE];
@@ -225,8 +228,9 @@ int main () {
         page = pageNum(buf);
         off = offset(buf);
         printf("For address %s pageNum = %u, offset = %u\n", buf, page, off);
-        int tmp = findFrame(page);
-        printf("Frame number for page %u is %d\n", page, tmp);
+        int frame = (int) findFrame(page);
+        printf("Frame number for page %u is %d\n", page, frame);
+        int physical_loc = (frame << OFFSET_BITS) | off;
     }
     fclose(fp);
     printf("Number of TLB hits: %d\n", TLBhits);
