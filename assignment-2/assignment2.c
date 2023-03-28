@@ -58,6 +58,7 @@ int TLBhits = 0;
 int TLBmisses = 0;
 
 // NOTE: binary file stores SIGNED BYTES; thus they are of type char
+// NOTE: physical memory addresses will all look like 0b0xxxxxxxxxxxxxxx (x = 0 or 1), as MSB of 0 means +ve for signed ints/chars
 
 // https://www.programiz.com/dsa/circular-linked-list
 struct TLBentry {
