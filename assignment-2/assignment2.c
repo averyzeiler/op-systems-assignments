@@ -43,29 +43,29 @@
 #include <string.h>
 #include <fcntl.h>
 
-#define BUF_SIZE 10
-#define PAGES 256
-#define PAGE_SIZE 256
-#define OFFSET_MASK 255
-#define OFFSET_BITS 8
-#define MAX_TLB 16
+#define BUF_SIZE 10         // Number of characters stored in buffer
+#define PAGES 256           // Number of pages in page table
+#define PAGE_SIZE 256       // Page size = 256 bytes
+#define OFFSET_MASK 255     // Offset mask = page size - 1 (as offset starts at 0)
+#define OFFSET_BITS 8       // Number of bits to represent offset; 2^8 = 256, so need 8 bits
+#define MAX_TLB 16          // Given in assignment
 
 // pages in pageTable can be from 0 to 127, as physical address space is half the size of logical address space!
 // this is why they are of type char, because -1 will indicate NOTHING IN PAGE TABLE!
-char pageTable[PAGES];   // Will store the frames to map to memory
-int pageFaults = 0;
-int TLBhits = 0;
-int TLBmisses = 0;
+char pageTable[PAGES];      // Will store the frames to map to memory
+int pageFaults = 0;         // Output total # of page faults when finished
+int TLBhits = 0;            // Output total # of TLB hits when finished
+int TLBmisses = 0;          // Output total # of TLB misses when finished
 
 // NOTE: binary file stores SIGNED BYTES; thus they are of type char
 // NOTE: physical memory addresses will all look like 0b0xxxxxxxxxxxxxxx (x = 0 or 1), as MSB of 0 means +ve for signed ints/chars
 
-// https://www.programiz.com/dsa/circular-linked-list
 struct TLBentry {
     uint8_t pageNumber;
-    uint8_t frameNumber;
+    char frameNumber;
 };
 
+// https://www.programiz.com/dsa/circular-linked-list
 struct Node {
     struct TLBentry data;
     struct Node* next;
@@ -80,7 +80,7 @@ int handlePageFault() {
 }
 
 // NOTE: last == end of CLL!
-// UTILITY FUNCTION: create a new CLL
+// UTILITY FUNCTION: create a new circularly linked list
 struct Node* addToEmpty (struct Node* last, struct TLBentry data) {
     // do nothing if list is not empty
     if (last != NULL) return last;
@@ -93,7 +93,7 @@ struct Node* addToEmpty (struct Node* last, struct TLBentry data) {
     return last;
 }
 
-// NOTE: add to this function to make sure list stays smaller than 16!
+// UTILITY FUNCTION: add to front of circularly linked list
 struct Node* addFront(struct Node* last, struct TLBentry data) {
     // create new list if list is empty
     if (last == NULL) return addToEmpty(last, data);
@@ -106,6 +106,7 @@ struct Node* addFront(struct Node* last, struct TLBentry data) {
     return last;
 }
 
+// UTILITY FUNCTION: returns size of TLB to ensure it doesn't exceed its limits
 int sizeOfTLB (struct Node* last) {
     struct Node* p;
     if (last == NULL) {
@@ -121,37 +122,42 @@ int sizeOfTLB (struct Node* last) {
     return count;
 }
 
-int search_TLB (struct Node* last, uint8_t page) {
+// From assignment doc, will search TLB for page # and will return frame # if found
+    // If not, will search through page table for frame #
+char search_TLB (struct Node* last, uint8_t page) {
     struct Node* p;
     if (last == NULL) {
+        // If the TLB is empty, we already know the page isn't in the TLB!
         printf("The list is empty.\n");
         TLBmisses++;
         return 0;
     }
     p = last->next;
     do {
-        // if page found, exit loop and return frame number
+        // If page found, exit loop and return frame number
         if (p->data.pageNumber == page) {
             printf("TLB hit!\n");
             TLBhits++;
-            return (int)p->data.frameNumber;
+            return (char)p->data.frameNumber;
         }
         p = p->next;
     } while (p != last->next);
     printf("TLB miss!\n");
     TLBmisses++;
-    return findFrame(page);   // indicates a TLB miss
+    return findFrame(page);   // Indicates a TLB miss
 }
 
+// UTILITY FUNCTION: returns pointer to TLB entry containing corresponding page number
 struct Node* find_TLB (struct Node* last, uint8_t page) {
     struct Node* p;
     if (last == NULL) {
+        // If the TLB is empty, we already know the page isn't in the TLB!
         printf("The list is empty.\n");
         return last;
     }
     p = last->next;
     do {
-        // if page found, exit loop and return frame number
+        // If page found, exit loop and return frame number
         if (p->data.pageNumber == page) {
             printf("Found page p!\n");
             return p;
@@ -159,9 +165,10 @@ struct Node* find_TLB (struct Node* last, uint8_t page) {
         p = p->next;
     } while (p != last->next);
     printf("Could not find page p!\n");
-    return last;   // indicates a TLB miss
+    return last;   // Indicates a TLB miss
 }
 
+// From assignment doc, will add an entry to the front of TLB
 struct Node* TLB_Add (struct Node* last, struct TLBentry data) {
     // add entry if traverse returns less than 16
     int size = sizeOfTLB(last);
@@ -175,7 +182,7 @@ struct Node* TLB_Add (struct Node* last, struct TLBentry data) {
         // if TLB already has 16 entries, must replace first entry
         last->data.frameNumber = data.frameNumber;
         last->data.pageNumber = data.pageNumber;
-        return last;
+        return last->next;
     }
 }
 
