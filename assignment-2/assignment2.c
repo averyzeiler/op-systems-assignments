@@ -74,6 +74,62 @@ struct Node {
 char findFrame(uint8_t page);
 
 int handlePageFault() {
+    //https://linuxhint.com/c-language-o_donly-o_wrongly-and-o_rdwr-flags/
+    // open the backing store file
+    int backing_store_fd = open("BACKING_STORE.bin", O_RDONLY); //O_RDONLY is flag used with open() function, read only 
+
+    // map the backing store file to a memory region
+    char* backing_store_data = mmap(NULL, BACKING_STORE_SIZE, PROT_READ, MAP_PRIVATE, backing_store_fd, 0);
+
+    // initialize page table and frame table
+    int page_table[NUM_PAGES];
+    for (int i = 0; i < NUM_PAGES; i++) {
+        page_table[i] = -1; //set entries in page table to -1,  not in memory 
+    }
+    for (int i = 0; i < NUM_FRAMES; i++) {
+        frame_table[i].page_number = -1; //set entries in frame table to -1, not added yet
+    }
+
+    // open the addresses file
+    FILE* addresses_file = fopen("addresses.txt", "r");
+
+    // initialize statistics variables
+    int num_page_faults = 0;
+    int num_tlb_hits = 0;
+
+    // read addresses from file
+    //https://lxadm.com/how-to-convert-logical-address-to-physical-address-in-paging/
+    int logical_address;
+    while (fscanf(addresses_file, "%d", &logical_address) == 1) {
+        // translate logical address to physical address
+        int page_number = (logical_address >> 8) & 0xFF; //bit mask used to set all bits to 0 except least sig 8
+        int page_offset = logical_address & 0xFF;
+        int frame_number = page_table[page_number];
+        if (frame_number == -1) { // page fault
+            num_page_faults++;
+            // look for an empty frame in memory
+            int empty_frame_number = -1; //no empty frame available
+            for (int i = 0; i < NUM_FRAMES; i++) { //itterate through frame table to find an empty spot
+                if (frame_table[i].page_number == -1) { //if empty frame found
+                    empty_frame_number = i; //index is stored
+                    break;
+                }
+            }
+            // copy page from backing store to physical memory
+            memcpy(&physical_memory[empty_frame_number * PAGE_SIZE], &backing_store_data[page_number * PAGE_SIZE], PAGE_SIZE);
+            // update page table and frame table
+            update_page_table(page_number, empty_frame_number, page_table);
+            frame_number = empty_frame_number;
+        }
+        else { // TLB hit
+            num_tlb_hits++;
+        }
+        //output the virtual addressm physical address, signed byte
+        int physical_address = (frame_number << 8) | page_offset; //combine frame num and page offset
+        int signed_byte_value = (int) physical_memory[frame_number * PAGE_SIZE + page_offset]; //go to physical mempry array using address
+        printf("Virtual address: %d Physical address: %d Value: %d\n", logical_address, physical_address, signed_byte_value);
+    }
+
     pageFaults++;
     printf("Page fault occurred; put page fault handling code here.\n");
     return -1;
