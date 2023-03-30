@@ -42,10 +42,12 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <fcntl.h>
+#include <stdbool.h>
 
 #define BUF_SIZE 10         // Number of characters stored in buffer
 #define PAGES 256           // Number of pages in page table
 #define PAGE_SIZE 256       // Page size = 256 bytes
+#define FRAMES 128          // Page size/2, as logical address space is 2x physical address space
 #define OFFSET_MASK 255     // Offset mask = page size - 1 (as offset starts at 0)
 #define OFFSET_BITS 8       // Number of bits to represent offset; 2^8 = 256, so need 8 bits
 #define MAX_TLB 16          // Given in assignment
@@ -53,6 +55,8 @@
 // pages in pageTable can be from 0 to 127, as physical address space is half the size of logical address space!
 // this is why they are of type char, because -1 will indicate NOTHING IN PAGE TABLE!
 char pageTable[PAGES];      // Will store the frames to map to memory
+bool frameTable[FRAMES];    // Will store which frames are empty
+bool checkVal = False;      // Defines which value in the frame table (T or F) indicates the next available frame 
 int pageFaults = 0;         // Output total # of page faults when finished
 int TLBhits = 0;            // Output total # of TLB hits when finished
 int TLBmisses = 0;          // Output total # of TLB misses when finished
@@ -73,7 +77,49 @@ struct Node {
 
 char findFrame(uint8_t page);
 
-int handlePageFault() {
+// UTILITY FUNCTION: used for handling page faults
+int findFrameGivenPage(char frame) {
+    for (int i = 0; i < PAGES; i++) {
+        if (pageTable[i] == frame) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int handlePageFault(uint8_t page) {
+    char available = 0;     // Represents available frame to store page with
+    bool found = False;
+    for (int i = 0; i < FRAMES; i++) {
+        if (frameTable[i] == checkVal) {
+            // Next available frame is at index i
+            frameTable[i] = !frameTable[i];     // Make frame not available
+            available = i;
+            found = True;
+            printf("Next available frame was found to be %c.\n", available);
+            break;
+        }
+    }
+    if (found == False) {
+        // Did not find an available frame
+        // Start again at beginning of frame table (FIFO)
+        checkVal = !checkVal;
+        frameTable[0] = !frameTable[0];
+        // To explain: for instance, if checkVal = F, that means all frameTable = T
+        // Then: we change checkVal to T, and set frameTable[0] to F, so next page fault will result in available = 1 and so on.
+    }
+    // Update the page table
+    int curr_page = findFrameGivenPage(available);
+    // If curr_page is -1, there's no page that is already using the frame, so don't have to use FIFO
+    if (curr_page >= 0) {
+        pageTable[curr_page] = -1;
+    }
+    pageTable[page] = available;
+
+    // Next, we do the memory-mapping stuff which I do not understand yet!
+
+    
+
     //https://linuxhint.com/c-language-o_donly-o_wrongly-and-o_rdwr-flags/
     // open the backing store file
     int backing_store_fd = open("BACKING_STORE.bin", O_RDONLY); //O_RDONLY is flag used with open() function, read only 
@@ -82,7 +128,7 @@ int handlePageFault() {
     char* backing_store_data = mmap(NULL, BACKING_STORE_SIZE, PROT_READ, MAP_PRIVATE, backing_store_fd, 0);
 
     // initialize page table and frame table
-    int page_table[NUM_PAGES];
+    int frame_table[NUM_PAGES];
     for (int i = 0; i < NUM_PAGES; i++) {
         page_table[i] = -1; //set entries in page table to -1,  not in memory 
     }
@@ -131,7 +177,6 @@ int handlePageFault() {
     }
 
     pageFaults++;
-    printf("Page fault occurred; put page fault handling code here.\n");
     return -1;
 }
 
@@ -275,13 +320,16 @@ char findFrame(uint8_t page) {
     } else {
         // page fault occurs!!
         // call function to handle page faults
-        return handlePageFault();
+        return handlePageFault(page);
     }
 }
 
 int main () {
     for (int i = 0; i < PAGES; i++) {
         pageTable[i] = (char)-1;
+    }
+    for (int i = 0; i < FRAMES; i++) {
+        frameTable[i] = True;
     }
     FILE * fp = fopen("requirements/addresses.txt", "r");
     char buf[BUF_SIZE];
