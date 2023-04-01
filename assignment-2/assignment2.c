@@ -170,10 +170,13 @@ int main () {
         physical = (frame << OFFSET_BITS) | off;
         printf("VIRTUAL ADDR %d: PHYSICAL ADDR %d: SIGNED BYTE VALUE:%hhd\n", logical, physical, frameTable[physical]);
     }
+    // Close and unmap addresses.txt and BACKING_STORE.bin
     fclose(fp);
     munmap(mmapfptr, PAGES * PAGE_SIZE);
+    // OUTPUT STATISTICS
     printf("Number of TLB hits: %d\n", TLBhits);
     printf("Number of TLB misses: %d\n", TLBmisses);
     printf("Number of page faults: %d\n", pageFaults);
+    printf("Total number of addresses: %d\n", TLBhits + TLBmisses);
     return 0;
 }
