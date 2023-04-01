@@ -1,7 +1,16 @@
 /*
     Assignment 2
     Avery Zeiler (zeilera, 400305001) and Clara Dawang (dawangc, 400329049)
-    Due: March 31st, 2023
+    Due: April 1st, 2023
+*/
+
+/*
+    REFERENCES:
+    Practice Lab 5 Part I (address translation code and syntax)
+    Practice Lab 5 Part II (memory mapping code and syntax)
+    Chapter 9 slides II (logical to physical memory mapping)
+    Chapter 9 slides II (how page table and TLB work)
+    For help with typedef: https://www.tutorialspoint.com/cprogramming/c_typedef.htm
 */
 
 #include <stdio.h>
@@ -11,38 +20,37 @@
 #include <string.h>
 #include <fcntl.h>
 
-#define BUF_SIZE 10         // Number of characters stored in buffer
-#define PAGES 256           // Number of pages in page table
-#define PAGE_SIZE 256       // Page size = 256 bytes
-#define FRAMES 128          // Page size/2, as logical address space is 2x physical address space
-#define OFFSET_MASK 255     // Offset mask = page size - 1 (as offset starts at 0)
-#define OFFSET_BITS 8       // Number of bits to represent offset; 2^8 = 256, so need 8 bits
-#define MAX_TLB 16          // Given in assignment
-#define MEM_SIZE FRAMES * PAGE_SIZE
+#define BUF_SIZE 10                     // Number of characters stored in buffer
+#define PAGES 256                       // Number of pages in page table
+#define PAGE_SIZE 256                   // Page size = 256 bytes
+#define FRAMES 128                      // Page size/2, as logical address space is 2x physical address space
+#define OFFSET_MASK 255                 // Offset mask = page size - 1 (as offset starts at 0)
+#define OFFSET_BITS 8                   // Number of bits to represent offset; 2^8 = 256, so need 8 bits
+#define MAX_TLB 16                      // Given in assignment
+#define MEM_SIZE FRAMES * PAGE_SIZE     // Define size of physical memory
 
+// TLBentry and BYTE created for better code readability
 typedef signed char BYTE;
+struct TLBentry {
+    int pageNumber;
+    BYTE frameNumber;
+};
 
-// pages in pageTable can be from 0 to 127, as physical address space is half the size of logical address space!
-// this is why they are of type char, because -1 will indicate NOTHING IN PAGE TABLE!
-BYTE pageTable[PAGES];        // Will store the frames to map to memory
-BYTE frameTable[MEM_SIZE];    // Emulates physical memory
-int nextFrame = 0;            // Next available frame
-BYTE *mmapfptr;
+// DATA STRUCTURES FOR MMU
+BYTE pageTable[PAGES];              // Will store the frames to map to memory
+BYTE frameTable[MEM_SIZE];          // Emulates physical memory
+int nextFrame = 0;                  // Next available frame
+BYTE *mmapfptr;                     // Used for memory mapping BACKING_STORE.bin
+struct TLBentry TLB[MAX_TLB];       // Translation lookaside buffer
+int nextTLB = 0;                    // Next available TLB location
 
 // OUTPUT STATISTICS
 int pageFaults = 0;         // Output total # of page faults when finished
 int TLBhits = 0;            // Output total # of TLB hits when finished
 int TLBmisses = 0;          // Output total # of TLB misses when finished
 
-struct TLBentry {
-    int pageNumber;
-    BYTE frameNumber;
-};
-
-struct TLBentry TLB[MAX_TLB];
-int nextTLB = 0;
-
 BYTE findFrame(uint8_t page);
+void TLB_Update(struct TLBentry data);
 
 // UTILITY FUNCTION: used for handling page faults
 int findFrameGivenPage(BYTE frame) {
@@ -55,9 +63,7 @@ int findFrameGivenPage(BYTE frame) {
     return -1;
 }
 
-void TLB_Update(struct TLBentry data);
-
-// PART 3 of assignment, handling page faults
+// PART 3 OF ASSIGNMENT: handling page faults
 BYTE handlePageFault(uint8_t page) {
     pageFaults++;
     // Firstly, we have to copy a 256-byte page from backing store -> physical memory array
@@ -80,21 +86,23 @@ BYTE handlePageFault(uint8_t page) {
     return nextFrame - 1;
 }
 
+// Search through TLB to find relevant page
 BYTE search_TLB(uint8_t page) {
     for (int i = 0; i < MAX_TLB; i++) {
         // If page found in TLB, increment TLBhits output statistic and return corresponding frame number
-        if (TLB[i].pageNumber == (int) page) {
+        // (i + nextTLB) % MAX_TLB ensures we start searching at oldest entry, maintaining CLL FIFO
+        if (TLB[(i + nextTLB) % MAX_TLB].pageNumber == (int) page) {
             TLBhits++;
-            return TLB[i].frameNumber;
+            return TLB[(i + nextTLB) % MAX_TLB].frameNumber;
         }
     }
     // Page not found in TLB, increment TLBmisses output statistic
     TLBmisses++;
-    // Then, must find frame using page table, then update the TLB
+    // Must find frame using page table, then update the TLB
     return findFrame(page);
 }
 
-// From assignment doc, will add an entry to the TLB
+// Add entry to TLB following FIFO
 void TLB_Add(struct TLBentry data) {
     // Replace oldest entry in TLB with new entry; FIFO
     TLB[nextTLB].pageNumber = data.pageNumber;
@@ -103,6 +111,7 @@ void TLB_Add(struct TLBentry data) {
     nextTLB %= MAX_TLB;     // Follows FIFO policy
 }
 
+// Update TLB when physical memory mapping is chagned (ie page fault occurred)
 void TLB_Update(struct TLBentry data) {
     // First, search TLB to see if page containing data's frame is already there; then we update
     for (int i = 0; i < MAX_TLB; i++) {
@@ -117,15 +126,17 @@ void TLB_Update(struct TLBentry data) {
     TLB_Add(data);
 }
 
-// NOTE: modified this function such that the TLB will be used!
+// Called by search_TLB if a TLB miss occurs
 BYTE findFrame(uint8_t page) {
     if (pageTable[page] != -1) {
+        // Frame found in page table; update TLB and return frame number
         struct TLBentry entry;
         entry.pageNumber = (int) page;
         entry.frameNumber = pageTable[page];
         TLB_Add(entry);
         return pageTable[page];
     } else {
+        // Frame not found in page table; handle page fault
         return handlePageFault(page);
     }
 }
@@ -151,6 +162,7 @@ int main () {
     int logical = 0;
     // Note that maximum # of characters in "addresses.txt" for 1 address is FIVE
     while (fgets(buf, BUF_SIZE, fp) != NULL) {
+        // PART 1 OF ASSIGNMENT: address translation (follows PL5)
         logical = atoi(buf);
         page = (uint8_t) (atoi(buf) >> OFFSET_BITS);
         off = (uint8_t) (atoi(buf) & OFFSET_MASK);
