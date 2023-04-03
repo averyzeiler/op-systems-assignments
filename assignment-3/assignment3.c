@@ -48,9 +48,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// https://www.geeksforgeeks.org/enumeration-enum-c/
+enum direction {LEFT = -1, RIGHT = 1};
+
 #define NUM_REQUESTS 20
 #define DISK_SIZE 300
 #define INT_SIZE 4
+#define DEFAULT_INITIAL 150
+#define DEFAULT_DIR RIGHT
 
 // NOTE: all algorithms will return total amount of head movement
 
@@ -77,11 +82,9 @@ int SSTF (int* requests, int initial) {
     for (int i = 0; i < NUM_REQUESTS; i++) {
         for (int j = 0; j < NUM_REQUESTS; j++) {
             // If new minimum head movement found, store values for movement time and index of request
-            if (requests[j] != -1) {
-                if (abs(requests[j] - tmp) < min) {
-                    min = abs(requests[j] - tmp);
-                    choose = j;
-                }
+            if (requests[j] != -1 && (abs(requests[j] - tmp) < min)) {
+                min = abs(requests[j] - tmp);
+                choose = j;
             }
         }
         sum += min;
@@ -94,26 +97,79 @@ int SSTF (int* requests, int initial) {
     return sum;
 }
 
-int SCAN (int* requests, int initial) {
+int SCAN (int* requests, int initial, enum direction dir) {
+    int sum = 0;
+    int start_at;
+    int temp = 0;
+    // Find index of element in arrray that is next to initial, given direction
+    if (dir == LEFT) {
+        start_at = 0;   // May have to change this
+        for (int i = NUM_REQUESTS - 1; i >= 0; i--) {
+            if (initial > requests[i]) {
+                start_at = i;
+                break;
+            }
+        }
+    } else {
+        start_at = NUM_REQUESTS - 1;    // May have to change this
+        for (int i = 0; i < NUM_REQUESTS; i++) {
+            if (initial < requests[i]) {
+                start_at = i;
+                break;
+            }
+        }
+    }
+}
+
+int CSCAN (int* requests, int initial, enum direction dir) {
 
 }
 
-int CSCAN (int* requests, int initial) {
+int LOOK (int* requests, int initial, enum direction dir) {
 
 }
 
-int LOOK (int* requests, int initial) {
+int CLOOK (int* requests, int initial, enum direction dir) {
 
 }
 
-int CLOOK (int* requests, int initial) {
-
-}
-
+// sort in ASCENDING order
+// will use SELECTION SORT algorithm: https://www.geeksforgeeks.org/selection-sort/
 int* sortArray (int* unsorted) {
-    
+    int sorted[NUM_REQUESTS];
+    int min_idx;
+    for (int i = 0; i < NUM_REQUESTS; i++) {
+        // Copy unsorted array into sorted array
+        sorted[i] = unsorted[i];
+    }
+    for (int i = 0; i < NUM_REQUESTS; i++) {
+        min_idx = i;
+        for (int j = i + 1; j < NUM_REQUESTS; j++) {
+            // Find index of minimum value in array
+            if (sorted[j] < sorted[min_idx]) {
+                min_idx = j;
+            }
+        }
+        // Swap minimum element with element @ current index if not already done
+        if (min_idx != i) {
+            int tmp = sorted[min_idx];
+            sorted[min_idx] = sorted[i];
+            sorted[i] = tmp;
+        }
+    }
+    return sorted;
 }
 
 int main (int argc, char *argv[]) {
+    // PARSE ARGUMENTS
+    // CASE 1: No arguments were input
+    // CASE 2: only initial location was input
+        // 2A: within acceptable range
+        // 2B: outside acceptable range
+    // CASE 3: all arguments were input (argc >= 3)
+        // 3A: both args are acceptable
+        // 3B: initial location outside acceptable range
+        // 3C: direction is improperly input
+        // 3D: neither argument was properly input
 
 }
