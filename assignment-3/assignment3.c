@@ -45,28 +45,68 @@
     - Total amount of head movement incurred by EACH algorithm
     ** THIS OUTPUT REPEATED FOR EACH ALGORITHM!
 */
+#include <stdio.h>
+#include <stdlib.h>
 
-int FCFS (int* requests) {
+#define NUM_REQUESTS 20
+#define DISK_SIZE 300
+#define INT_SIZE 4
+
+// NOTE: all algorithms will return total amount of head movement
+
+int FCFS (int* requests, int initial) {
+    int sum = 0;
+    int tmp = initial;
+    printf("FCFS [FIRST COME FIRST SERVE]\n\n");
+    for (int i = 0; i < NUM_REQUESTS; i++) {
+        printf("%d -> ", tmp);
+        sum += abs(requests[i] - tmp);
+        tmp = requests[i];
+    }
+    printf("%d\n\n", tmp);
+    return sum;
+}
+
+int SSTF (int* requests, int initial) {
+    int sum = 0;
+    int tmp = initial;
+    int min = DISK_SIZE;
+    int choose = 0;             // Will represent INDEX of next request to service
+    printf("SSTF [SHORTEST SEEK TIME FIRST]\n\n");
+    // NOTE: using O(n^2) algorithm because list size = 20, however would change this if there were more requests.
+    for (int i = 0; i < NUM_REQUESTS; i++) {
+        for (int j = 0; j < NUM_REQUESTS; j++) {
+            // If new minimum head movement found, store values for movement time and index of request
+            if (requests[j] != -1) {
+                if (abs(requests[j] - tmp) < min) {
+                    min = abs(requests[j] - tmp);
+                    choose = j;
+                }
+            }
+        }
+        sum += min;
+        min = DISK_SIZE;        // Reset so can start whole process again
+        tmp = requests[choose];
+        printf("%d -> ", tmp);
+        requests[choose] = -1;  // Remove serviced request from list
+    }
+    printf("%d\n\n", tmp);
+    return sum;
+}
+
+int SCAN (int* requests, int initial) {
 
 }
 
-int SSTF (int* requests) {
+int CSCAN (int* requests, int initial) {
 
 }
 
-int SCAN (int* requests) {
+int LOOK (int* requests, int initial) {
 
 }
 
-int CSCAN (int* requests) {
-
-}
-
-int LOOK (int* requests) {
-
-}
-
-int CLOOK (int* requests) {
+int CLOOK (int* requests, int initial) {
 
 }
 
