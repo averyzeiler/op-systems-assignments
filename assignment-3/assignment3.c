@@ -53,6 +53,7 @@ enum direction {LEFT = -1, RIGHT = 1};
 
 #define NUM_REQUESTS 20
 #define DISK_SIZE 300
+#define DISK_MAX DISK_SIZE - 1
 #define INT_SIZE 4
 #define DEFAULT_INITIAL 150
 #define DEFAULT_DIR RIGHT
@@ -97,13 +98,11 @@ int SSTF (int* requests, int initial) {
     return sum;
 }
 
-int SCAN (int* requests, int initial, enum direction dir) {
-    int sum = 0;
-    int start_at;
-    int temp = 0;
-    // Find index of element in arrray that is next to initial, given direction
+// UTILITY FUNCTION: find index of element in arrray that is next to initial, given direction
+int findStart (int* requests, int initial, enum direction dir) {
     if (dir == LEFT) {
-        start_at = 0;   // May have to change this
+        // Ensure that we can still use SCAN if smaller element isn't found
+        start_at = 0;
         for (int i = NUM_REQUESTS - 1; i >= 0; i--) {
             if (initial > requests[i]) {
                 start_at = i;
@@ -111,7 +110,8 @@ int SCAN (int* requests, int initial, enum direction dir) {
             }
         }
     } else {
-        start_at = NUM_REQUESTS - 1;    // May have to change this
+        // Ensure that we can still use SCAN if larger element isn't found
+        start_at = NUM_REQUESTS - 1;
         for (int i = 0; i < NUM_REQUESTS; i++) {
             if (initial < requests[i]) {
                 start_at = i;
@@ -119,6 +119,49 @@ int SCAN (int* requests, int initial, enum direction dir) {
             }
         }
     }
+    return start_at;
+}
+
+int SCAN (int* requests, int initial, enum direction dir) {
+    int sum = 0;
+    int start_at = findStart(requests, initial, dir);
+    int temp = initial;
+    int inc = (int) dir;    // To increment/decrement i
+    int i = start_at;       // Index of traversal
+    // Next, traverse array in direction given
+    while (i >= 0 && i < NUM_REQUESTS) {
+        printf("%d -> ", temp);
+        //sum += abs(temp - requests[i]);
+        temp = requests[i];
+        i += inc;
+    }
+    printf("%d -> ", temp);
+    // Move disk head so it starts at the next available request
+    if (dir == LEFT) {
+        //sum += temp;
+        i = start_at + 1;
+    } else {
+        //sum += NUM_REQUESTS - temp - 1;
+        i = start_at - 1;
+    }
+    temp = requests[i];
+    // Next, reverse direction and continue until full list has been traversed
+    while (i >= 0 && i < NUM_REQUESTS) {
+        printf("%d -> ", temp);
+        temp = requests[i];
+        i -= inc;
+    }
+    // Finally, calculate sum
+    if (dir == LEFT) {
+        // Sum = |initial - 0| + |0 - final| = initial + final
+        printf("%d\n", requests[NUM_REQUESTS - 1]);
+        sum = initial + requests[NUM_REQUESTS - 1];
+    } else {
+        // Sum = |DISK_MAX - initial| + |DISK_MAX - final|
+        printf("%d\n", requests[0]);
+        sum = DISK_MAX * 2 - initial - requests[0];
+    }
+    return sum;
 }
 
 int CSCAN (int* requests, int initial, enum direction dir) {
@@ -126,7 +169,45 @@ int CSCAN (int* requests, int initial, enum direction dir) {
 }
 
 int LOOK (int* requests, int initial, enum direction dir) {
-
+    int sum = 0;
+    int start_at = findStart(requests, initial, dir);
+    int temp = initial;
+    int inc = (int) dir;    // To increment/decrement i
+    int i = start_at;       // Index of traversal
+    // Next, traverse array in direction given
+    while (i >= 0 && i < NUM_REQUESTS) {
+        printf("%d -> ", temp);
+        //sum += abs(temp - requests[i]);
+        temp = requests[i];
+        i += inc;
+    }
+    printf("%d -> ", temp);
+    // Move disk head so it starts at the next available request
+    if (dir == LEFT) {
+        //sum += temp;
+        i = start_at + 1;
+    } else {
+        //sum += NUM_REQUESTS - temp - 1;
+        i = start_at - 1;
+    }
+    temp = requests[i];
+    // Next, reverse direction and continue until full list has been traversed
+    while (i >= 0 && i < NUM_REQUESTS) {
+        printf("%d -> ", temp);
+        temp = requests[i];
+        i -= inc;
+    }
+    // Finally, calculate sum
+    if (dir == LEFT) {
+        // Sum = |initial - min| + |min - final| = initial + final - min * 2
+        printf("%d\n", requests[NUM_REQUESTS - 1]);
+        sum = initial + requests[NUM_REQUESTS - 1] - requests[0] * 2;
+    } else {
+        // Sum = |max - initial| + |max - final| = max * 2 - initial - final
+        printf("%d\n", requests[0]);
+        sum = requests[NUM_REQUESTS - 1] * 2 - initial - requests[0];
+    }
+    return sum;
 }
 
 int CLOOK (int* requests, int initial, enum direction dir) {
