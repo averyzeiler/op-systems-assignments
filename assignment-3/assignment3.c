@@ -117,7 +117,7 @@ int SCAN (int* requests, int initial, enum direction dir) {
         if (temp != initial) { printf("%d -> ", temp); }
         i -= inc;
     }
-    printf("END\n");
+    printf("END\n\n");
     // Finally, calculate sum
     if (dir == LEFT) {
         // Sum = |initial - 0| + |0 - final| = initial + final
@@ -152,7 +152,7 @@ int CSCAN (int* requests, int initial, enum direction dir) {
         if (temp != initial) { printf("%d -> ", temp); }
         i += inc;
     }
-    printf("END\n");
+    printf("END\n\n");
     // Finally, calculate sum
     if (dir == LEFT) {
         // sum = |initial - 0| + |0 - DISK_MAX| + |DISK_MAX - final| = initial + DISK_MAX * 2 - final
@@ -187,7 +187,7 @@ int LOOK (int* requests, int initial, enum direction dir) {
         if (temp != initial) { printf("%d -> ", temp); }
         i -= inc;
     }
-    printf("END\n");
+    printf("END\n\n");
     // Finally, calculate sum
     if (dir == LEFT) {
         // Sum = |initial - min| + |min - final| = initial + final - min * 2
@@ -223,7 +223,7 @@ int CLOOK (int* requests, int initial, enum direction dir) {
         if (temp != initial) { printf("%d -> ", temp); }
         i += inc;
     }
-    printf("END\n");
+    printf("END\n\n");
     // Finally, calculate sum
     if (dir == LEFT) {
         // sum = |initial - min| + |min - max| + |max - final| = initial + max * 2 - final - min * 2
