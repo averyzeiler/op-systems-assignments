@@ -4,23 +4,7 @@
     Due: April 14th, 2023
 */
 
-/*
-    IMPLEMENT FOLLOWING ALGORITHMS:
-    - FCFS [5 marks]: first-come-first-served, so in order of requests.bin
-        - Head movement = abs(loc1 - loc2) + abs(loc2 - loc3) + ... + abs(loc[n-1] - locn)
-    - SSTF [10 marks]: choose pending request closest to current head position
-        - Looks like SJF, so means may cause starvation
-        - Look for smallest difference between start + all requests, then replace start with the next serviced request + repeat
-    - SCAN [10 marks]: move in direction of head until end of disk, then move back in other direction
-        - Think of it like an ELEVATOR; goes all the way up then all the way down or vice versa
-    - C-SCAN [5 marks]: move in direction of head until end of disk, then go back to BEGINNING and continue in same direction
-        - However this means we MUST add the # of cylinders to the total bc it traverses all the way back
-    - LOOK [5 marks]: starts in direction of head, then reverses once it reaches its furthest location
-        - Difference from SCAN is that it does NOT go to end of disk!
-    - C-LOOK [5 marks]: similar to C-SCAN, but also does not go ALL the way to extremity of disk, just to furthest request
-    *** TOTAL 40 MARKS
-    Refer to chapter 11 slides!
-*/
+// Refer to chapter 11 slides!
 
 /*
     - Service a disk with 300 cylinders (0 to 299)
@@ -47,6 +31,7 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 // https://www.geeksforgeeks.org/enumeration-enum-c/
 enum direction {LEFT = -1, RIGHT = 1};
@@ -100,6 +85,7 @@ int SSTF (int* requests, int initial) {
 
 // UTILITY FUNCTION: find index of element in arrray that is next to initial, given direction
 int findStart (int* requests, int initial, enum direction dir) {
+    int start_at;
     if (dir == LEFT) {
         // Ensure that we can still use SCAN if smaller element isn't found
         start_at = 0;
@@ -123,6 +109,7 @@ int findStart (int* requests, int initial, enum direction dir) {
 }
 
 int SCAN (int* requests, int initial, enum direction dir) {
+    printf("SCAN ALGORITHM\n\n");
     int sum = 0;
     int start_at = findStart(requests, initial, dir);
     int temp = initial;
@@ -165,10 +152,47 @@ int SCAN (int* requests, int initial, enum direction dir) {
 }
 
 int CSCAN (int* requests, int initial, enum direction dir) {
-
+    printf("C-SCAN ALGORITHM\n\n");
+    int sum = 0;
+    int start_at = findStart(requests, initial, dir);
+    int temp = initial;
+    int inc = (int) dir;    // To increment/decrement i
+    int i = start_at;       // Index of traversal
+    // Next, traverse array in direction given
+    while (i >= 0 && i < NUM_REQUESTS) {
+        printf("%d -> ", temp);
+        //sum += abs(temp - requests[i]);
+        temp = requests[i];
+        i += inc;
+    }
+    printf("%d -> ", temp);
+    // Move disk head so it starts at the next available request
+    if (dir == LEFT) {
+        i = NUM_REQUESTS - 1;
+    } else {
+        i = 0;
+    }
+    temp = requests[i];
+    // Next, travel to opposite end of disk and continue in same direction until all requests serviced
+    while (i != start_at) {
+        printf("%d -> ", temp);
+        //sum += abs(temp - requests[i]);
+        temp = requests[i];
+        i += inc;
+    }
+    // Finally, calculate sum
+    if (dir == LEFT) {
+        // sum = |initial - 0| + |0 - DISK_MAX| + |DISK_MAX - final| = initial + DISK_MAX * 2 - final
+        sum = DISK_MAX * 2 + initial - requests[start_at + 1];
+    } else {
+        // sum = |initial - DISK_MAX| + |DISK_MAX - 0| + |0 - final| = DISK_MAX * 2 + final - initial
+        sum = DISK_MAX * 2 + requests[start_at - 1] - initial;
+    }
+    return sum;
 }
 
 int LOOK (int* requests, int initial, enum direction dir) {
+    printf("LOOK ALGORITHM\n\n");
     int sum = 0;
     int start_at = findStart(requests, initial, dir);
     int temp = initial;
@@ -211,7 +235,43 @@ int LOOK (int* requests, int initial, enum direction dir) {
 }
 
 int CLOOK (int* requests, int initial, enum direction dir) {
-
+    printf("C-LOOK ALGORITHM\n\n");
+    int sum = 0;
+    int start_at = findStart(requests, initial, dir);
+    int temp = initial;
+    int inc = (int) dir;    // To increment/decrement i
+    int i = start_at;       // Index of traversal
+    // Next, traverse array in direction given
+    while (i >= 0 && i < NUM_REQUESTS) {
+        printf("%d -> ", temp);
+        //sum += abs(temp - requests[i]);
+        temp = requests[i];
+        i += inc;
+    }
+    printf("%d -> ", temp);
+    // Move disk head so it starts at the next available request
+    if (dir == LEFT) {
+        i = NUM_REQUESTS - 1;
+    } else {
+        i = 0;
+    }
+    temp = requests[i];
+    // Next, travel to opposite end of disk and continue in same direction until all requests serviced
+    while (i != start_at) {
+        printf("%d -> ", temp);
+        //sum += abs(temp - requests[i]);
+        temp = requests[i];
+        i += inc;
+    }
+    // Finally, calculate sum
+    if (dir == LEFT) {
+        // sum = |initial - min| + |min - max| + |max - final| = initial + max * 2 - final - min * 2
+        sum = requests[NUM_REQUESTS - 1] * 2 + initial - requests[start_at + 1] - requests[0] * 2;
+    } else {
+        // sum = |initial - max| + |max - min| + |min - final| = max * 2 + final - initial - min * 2
+        sum = requests[NUM_REQUESTS - 1] * 2 + requests[start_at - 1] - initial - requests[0] * 2;
+    }
+    return sum;
 }
 
 // sort in ASCENDING order
@@ -242,15 +302,19 @@ int* sortArray (int* unsorted) {
 }
 
 int main (int argc, char *argv[]) {
-    // PARSE ARGUMENTS
-    // CASE 1: No arguments were input
-    // CASE 2: only initial location was input
-        // 2A: within acceptable range
-        // 2B: outside acceptable range
-    // CASE 3: all arguments were input (argc >= 3)
-        // 3A: both args are acceptable
-        // 3B: initial location outside acceptable range
-        // 3C: direction is improperly input
-        // 3D: neither argument was properly input
-
+    int initial = DEFAULT_INITIAL;
+    enum direction dir = DEFAULT_DIR;
+    // INTERPRET ARGUMENTS: can only use input arguments if argc >= 2 
+    if (argc >= 2) {
+        // Check if within acceptable range
+        if ((atoi(argv[1]) >= 0) && (atoi(argv[1]) <= DISK_MAX)) {
+            initial = atoi(argv[1]);
+        }
+    }
+    if (argc >= 3) {
+        // Only need to change if direction is left
+        if (argv[3] == "LEFT") {
+            dir = LEFT;
+        }
+    }
 }
